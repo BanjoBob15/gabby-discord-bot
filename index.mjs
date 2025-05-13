@@ -1,16 +1,15 @@
 import 'dotenv/config';
-import { keepAlive } from './keepAlive.js';
-keepAlive();
-
+import express from 'express';
 import { Client, GatewayIntentBits } from 'discord.js';
 import axios from 'axios';
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
+import keepAlive from './keepAlive.js';
+
+keepAlive();
 
 const adapter = new JSONFile('gabby-db.json');
-const db = new Low(adapter, {});
-await db.read();
-db.data ||= {};
+const db = new Low(adapter);
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
@@ -64,7 +63,8 @@ const cooldownMS = 8000;
 let lastCalled = 0;
 
 const getUserProfile = async (userId) => {
-  return db.data[userId] || {
+  await db.read();
+  return db.data?.[userId] || {
     name: "First Liner",
     mood: "neutral",
     condition: "stable",
@@ -73,6 +73,7 @@ const getUserProfile = async (userId) => {
 };
 
 const updateUserProfile = async (userId, updates) => {
+  await db.read();
   const current = await getUserProfile(userId);
   const updated = { ...current, ...updates };
   db.data[userId] = updated;
@@ -166,7 +167,7 @@ Use this data to guide a helpful and professional response.
     message.reply(reply);
 
   } catch (error) {
-    if (error.response && error.response.status === 429) {
+    if (error.response?.status === 429) {
       console.warn("⚠️ Confirmed 429 from OpenAI:", error.response.data);
       return message.reply("⚠️ My cognitive interface is currently overwhelmed with reintegration requests. Please try again in a few moments, First Liner.");
     } else {
@@ -176,5 +177,10 @@ Use this data to guide a helpful and professional response.
   }
 });
 
-client.login(process.env.DISCORD_BOT_TOKEN);
+async function initializeBot() {
+  await db.read();
+  db.data ||= {};
+  client.login(process.env.DISCORD_BOT_TOKEN);
+}
 
+initializeBot();
