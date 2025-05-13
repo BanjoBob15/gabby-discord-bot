@@ -1,14 +1,9 @@
-const express = require('express');
-const app = express();
-
-app.get('/', (req, res) => {
-  res.send('Gabby is operational.');
-});
+import express from 'express';
 
 function keepAlive() {
-  app.listen(3000, () => {
-    console.log("✅ Keep-alive server is running.");
-  });
+  const app = express();
+  app.get('/', (req, res) => res.send('✅ Gabby is awake.'));
+  app.listen(3000, () => console.log('✅ Keep-alive server is running.'));
 }
 
-module.exports = keepAlive;
+export default keepAlive;
