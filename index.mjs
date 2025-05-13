@@ -65,7 +65,8 @@ let lastCalled = 0;
 
 const getUserProfile = async (userId) => {
   await db.read();
-  return db.data?.[userId] || {
+  db.data ||= {};
+  return db.data[userId] || {
     name: "First Liner",
     mood: "neutral",
     condition: "stable",
@@ -83,12 +84,21 @@ const updateUserProfile = async (userId, updates) => {
 };
 
 const appendNote = async (userId, note) => {
-  const current = await getUserProfile(userId);
+  await db.read();
+  db.data ||= {}; // Ensure db.data is initialized
+  const current = db.data[userId] || {
+    name: "First Liner",
+    mood: "neutral",
+    condition: "stable",
+    notes: []
+  };
   const notes = current.notes || [];
   notes.push(note);
   db.data[userId] = { ...current, notes };
   await db.write();
 };
+
+
 
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
