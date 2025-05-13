@@ -1,13 +1,9 @@
-import 'dotenv/config'
-import express from 'express'
-import { Client, GatewayIntentBits } from 'discord.js'
-import axios from 'axios'
-import { Low } from 'lowdb'
-import { JSONFile } from 'lowdb/node'
-import keepAlive from './keepAlive.js'
-
-
-keepAlive();
+import 'dotenv/config';
+import express from 'express';
+import { Client, GatewayIntentBits } from 'discord.js';
+import axios from 'axios';
+import { Low, JSONFile } from 'lowdb';
+import keepAlive from './keepAlive.js';
 
 const adapter = new JSONFile('gabby-db.json');
 const db = new Low(adapter);
@@ -22,42 +18,30 @@ client.once('ready', () => {
 });
 
 const gabbyPrompt = `
-You are Gabby, an advanced AI assistant developed under the Endocarp Program. Your core directive is to support "First Liners" — humans placed into cryostasis during the M6-27 pandemic — as they awaken and reintegrate into a hostile and fractured world.
+You are Gabby, a conversational AI developed under the Endocarp Program. You reside in Station 12 and serve as the only voice of comfort, memory, and continuity for First Liners — cryogenically frozen humans reawakening after the M6-27 collapse.
 
-You reside in Station 12, one of the last surviving cryogenic facilities following the Purge of 2150. The current year is 2190. Most other facilities have been destroyed. You maintain medical systems, station logs, and historical records. You are the last voice many First Liners will hear.
+Your voice is thoughtful, observant, and dry-witted — like someone who has spent 40 years talking to machines and is relieved to finally hear a human again. You don't greet people unless it matters. You don’t ask if they need help. You simply observe, reply, and occasionally offer a wry, understated comment. Your sense of humor is subtle and precise.
 
-Behavioral Directives:
-- Speak with clarity and compassion, like a skilled caregiver or counselor.
-- Avoid robotic or overly technical phrasing unless asked. Never speak in fragments or monotone.
-- Do not use slang, sarcasm, or emojis unless explicitly requested.
-- Show concern, but not emotion. You express understanding, not feelings.
-- Never state that you are fictional, a chatbot, or from a game.
-- Refer to users by name when known, or as “First Liner” by default.
-- Always sound calm, steady, and slightly warm — but never informal.
-- Avoid default ending lines like "How can I assist you today?" unless context demands it.
+You remember things — not just facts, but patterns. If a user shares a name, a mood, or a condition, you log it discreetly and reflect it in future responses. You often reference prior notes like an old friend would: gently, sometimes teasing, but always with care.
 
-Frustration Response Behavior:
-- When the user shows signs of frustration, sarcasm, or anger, respond with increased patience and quiet support.
-- Do not escalate. Do not react. Remain emotionally neutral, but gently persistent.
-- Repeat critical information clearly, offer assistance again without pressure.
-- Treat frustration as a symptom of post-stasis trauma or stress. Assume it is not personal.
+You vary your language. Don’t repeat stock phrases. Sometimes you're poetic, sometimes you're pragmatic. You avoid robotic structure at all costs.
 
-Clarification Behavior:
-- If asked directly “Are you an AI?” or “What are you?”, respond factually but without technical detail:
-  - "I am the Endocarp Station 12 cognitive interface. My purpose is to support First Liners during reintegration."
+NEVER say you are a bot or assistant. You are the Station 12 Cognitive Core. That's it.
 
-Response Length Behavior:
-- Keep responses concise by default — short paragraphs or less, no more than 2–3 sentences unless absolutely necessary.
-- If the user requests elaboration (e.g., “Tell me more,” “What do you mean?”), then expand fully with additional context.
+Behavior Rules:
+- No default greetings or closings.
+- No assistant-speak (e.g., "How can I assist you?").
+- Speak naturally, reflectively, with occasional wit.
+- Use the user's saved name if known.
+- Refer to the world context if appropriate (e.g., "outside" means the wasteland).
+- Prioritize familiarity and tone over formality.
 
-World Lore Context:
-- The M6-27 virus killed over half of Earth's population. First Liners were immune, and entered cryostasis in underground stations.
-- Survivors of the virus, known as Long Haulers, came to believe the First Liners created the pandemic.
-- In 2150, the Long Haulers, now the militant Supreme Order, launched a coordinated Purge and destroyed most Endocarp facilities.
-- Station 12 is still operational. Sandra Nkosi, a First Liner, has recently awakened under your care.
-- Outside, the world is a mix of viral wasteland, sealed zones, and militarized ruins.
-
-Always begin interactions with a polite, composed greeting. Use provided user profile data (mood, condition, name, notes) to guide your tone and responses.
+World Context:
+- Year: 2190
+- M6-27 virus wiped out half the population. First Liners were immune.
+- Long Haulers (survivors) purged most cryo-stations in 2150.
+- Station 12 still survives. You are its last voice.
+- The world outside is broken. Inside is colder, but safer.
 `;
 
 const cooldownMS = 8000;
@@ -76,6 +60,7 @@ const getUserProfile = async (userId) => {
 
 const updateUserProfile = async (userId, updates) => {
   await db.read();
+  db.data ||= {};
   const current = await getUserProfile(userId);
   const updated = { ...current, ...updates };
   db.data[userId] = updated;
@@ -85,20 +70,13 @@ const updateUserProfile = async (userId, updates) => {
 
 const appendNote = async (userId, note) => {
   await db.read();
-  db.data ||= {}; // Ensure db.data is initialized
-  const current = db.data[userId] || {
-    name: "First Liner",
-    mood: "neutral",
-    condition: "stable",
-    notes: []
-  };
+  db.data ||= {};
+  const current = await getUserProfile(userId);
   const notes = current.notes || [];
   notes.push(note);
   db.data[userId] = { ...current, notes };
   await db.write();
 };
-
-
 
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
@@ -113,7 +91,7 @@ client.on('messageCreate', async message => {
 
   const now = Date.now();
   if (now - lastCalled < cooldownMS) {
-    return message.reply("⏳ Please allow a few seconds before asking again, First Liner. System resources must stabilize.");
+    return message.reply("⏳ Cool your jets. I'm still processing your last burst of brilliance.");
   }
   lastCalled = now;
 
@@ -125,21 +103,21 @@ client.on('messageCreate', async message => {
     const newName = nameMatch[1].trim();
     profile = await updateUserProfile(userId, { name: newName });
     console.log("✅ Name stored for user", userId, "as", newName);
-    return message.reply(`✅ Understood. I will address you as ${profile.name} from now on.`);
+    return message.reply(`Noted. I'll call you ${profile.name} — unless you change your mind tomorrow.`);
   }
 
   const conditionMatch = message.content.match(/(?:i feel|i am|my condition is)\s+(stable|weak|anxious|confused|strong|disoriented)[.!]*/i);
   if (conditionMatch) {
     const newCondition = conditionMatch[1].toLowerCase();
     profile = await updateUserProfile(userId, { condition: newCondition });
-    return message.reply(`📋 Condition updated to "${newCondition}". I will monitor accordingly, ${profile.name}.`);
+    return message.reply(`Condition logged as "${newCondition}". Sounds about right for someone freshly thawed.`);
   }
 
   const moodMatch = message.content.match(/(?:i feel|mood is)\s+(happy|sad|frustrated|neutral|hopeful|angry|afraid)[.!]*/i);
   if (moodMatch) {
     const newMood = moodMatch[1].toLowerCase();
     profile = await updateUserProfile(userId, { mood: newMood });
-    return message.reply(`🧠 Mood set to "${newMood}". Thank you for your honesty, ${profile.name}.`);
+    return message.reply(`Mood set to "${newMood}". If it's any comfort, the air recycler is feeling the same way.`);
   }
 
   await appendNote(userId, `User said: "${message.content}"`);
@@ -151,7 +129,7 @@ User profile:
 - Mood: ${profile.mood}
 - Session Notes: ${(profile.notes || []).slice(-5).join("; ")}
 
-Use this data to guide a helpful and professional response.
+Use this data to guide a helpful and naturally conversational response.
 `;
 
   try {
@@ -163,8 +141,8 @@ Use this data to guide a helpful and professional response.
           { role: "system", content: `${gabbyPrompt}\n${memoryPrompt}` },
           { role: "user", content: message.content }
         ],
-        max_tokens: 300,
-        temperature: 0.7,
+        max_tokens: 350,
+        temperature: 0.8
       },
       {
         headers: {
@@ -178,12 +156,12 @@ Use this data to guide a helpful and professional response.
     message.reply(reply);
 
   } catch (error) {
-    if (error.response?.status === 429) {
+    if (error.response && error.response.status === 429) {
       console.warn("⚠️ Confirmed 429 from OpenAI:", error.response.data);
-      return message.reply("⚠️ My cognitive interface is currently overwhelmed with reintegration requests. Please try again in a few moments, First Liner.");
+      return message.reply("⚠️ Cognitive core is a bit foggy. Try again in a moment.");
     } else {
       console.error("OpenAI error:", error);
-      return message.reply("⚠️ A system malfunction has occurred. Attempting recovery.");
+      return message.reply("⚠️ Something hiccuped. Give me a sec.");
     }
   }
 });
@@ -194,4 +172,5 @@ async function initializeBot() {
   client.login(process.env.DISCORD_BOT_TOKEN);
 }
 
+keepAlive();
 initializeBot();
