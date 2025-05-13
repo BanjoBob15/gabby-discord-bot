@@ -2,7 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import { Client, GatewayIntentBits } from 'discord.js';
 import axios from 'axios';
-import { Low, JSONFile } from 'lowdb';
+import { Low } from 'lowdb';
+import { JSONFile } from 'lowdb/node';
 import keepAlive from './keepAlive.js';
 
 const adapter = new JSONFile('gabby-db.json');
