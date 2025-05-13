@@ -1,10 +1,10 @@
-import 'dotenv/config';
-import express from 'express';
-import { Client, GatewayIntentBits } from 'discord.js';
-import axios from 'axios';
-import pkg from 'lowdb';
-const { Low, JSONFile } = pkg;
-import keepAlive from './keepAlive.js';
+import 'dotenv/config'
+import express from 'express'
+import { Client, GatewayIntentBits } from 'discord.js'
+import axios from 'axios'
+import { Low } from 'lowdb'
+import { JSONFile } from 'lowdb/node'
+import keepAlive from './keepAlive.js'
 
 
 keepAlive();
